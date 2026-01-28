@@ -44,6 +44,7 @@ npm start
 The frontend will run on:
 
 http://localhost:3000
+
 Persistence Layer
 
 MongoDB is used as the persistence layer.
