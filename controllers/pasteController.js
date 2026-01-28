@@ -85,33 +85,41 @@ exports.getPasteApi = async (req, res) => {
       expires_at: paste.expiresAt,
     });
   } catch (err) {
-    res.status(404).json({ error: "Invalid ID" });
+    if (err.name === "CastError") {
+      return res.status(400).json({ error: "Invalid paste ID" });
+    }
+  res.status(500).json({ error: "Server error" });
   }
 };
+
 exports.viewPasteHtml = async (req, res) => {
-  const paste = await Paste.findById(req.params.id);
-  if (!paste) return res.status(404).send("Not Found");
+  try {
+    const paste = await Paste.findById(req.params.id);
+    if (!paste) return res.status(404).send("Not Found");
 
-  const now = getCurrentTime(req);
+    const now = getCurrentTime(req);
 
-  if (paste.expiresAt && now > paste.expiresAt) {
-    return res.status(404).send("Expired");
+    if (paste.expiresAt && now > paste.expiresAt) {
+      return res.status(404).send("Expired");
+    }
+
+    if (paste.maxViews !== null && paste.viewsUsed >= paste.maxViews) {
+      return res.status(404).send("View limit exceeded");
+    }
+
+    paste.viewsUsed += 1;
+    await paste.save();
+
+    res.send(`
+      <html>
+        <body>
+          <pre>${escapeHtml(paste.content)}</pre>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    return res.status(404).send("Not Found");
   }
-
-  if (paste.maxViews !== null && paste.viewsUsed >= paste.maxViews) {
-    return res.status(404).send("View limit exceeded");
-  }
-
-  paste.viewsUsed += 1;
-  await paste.save();
-
-  res.send(`
-    <html>
-      <body>
-        <pre>${escapeHtml(paste.content)}</pre>
-      </body>
-    </html>
-  `);
 };
 function escapeHtml(text) {
   return text
