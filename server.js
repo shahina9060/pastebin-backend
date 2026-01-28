@@ -9,7 +9,7 @@ const database = require("./config/db")
 
 database();
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: "https://pastebin-frontend-five.vercel.app",
     credentials: true
 }))
 app.use(express.json());
